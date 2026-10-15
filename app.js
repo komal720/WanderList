@@ -9,10 +9,14 @@ const path = require("path");
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
+app.use(express.urlencoded({extended:true}));
+
 app.get("/", (req, res) => {
   res.send("Hii, I am Root");
 });
 
+
+//index route
 app.get("/listing", async (req, res) => {
   try {
     const allListing = await Listing.find({});
@@ -22,6 +26,19 @@ app.get("/listing", async (req, res) => {
     res.status(500).send("Error fetching listings");
   }
 });
+
+
+
+//show route 
+
+app.get("/listing/:id",async (req,res)=>{
+  let {id}=req.params;
+  const listing = await Listing.findById(id);
+  res.render("listing/show.ejs",{listing});
+
+
+});
+
 
 const startServer = async () => {
   try {
