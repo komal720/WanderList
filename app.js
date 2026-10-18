@@ -9,6 +9,10 @@ const path = require("path");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 
+const wrapAsync = require("./utils/wrapAsync");
+const ExpressError = require("./utils/ExpressError.js");
+const { listingSchema } = require("./schema.js");
+
 // EJS Configuration
 app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
@@ -26,16 +30,25 @@ app.get("/", (req, res) => {
     res.send("Hii, I am Root");
 });
 
+// Validate Listing Middleware
+const validateListing = (req, res, next) => {
+    const { error } = listingSchema.validate(req.body.listing);
+
+    if (error) {
+        return next(new ExpressError(400, error.message));
+    }
+
+    next();
+};
+
 // Index Route
-app.get("/listings", async (req, res) => {
-    try {
+app.get(
+    "/listings",
+    wrapAsync(async (req, res) => {
         const allListing = await Listing.find({});
         res.render("listings/index.ejs", { allListing });
-    } catch (err) {
-        console.error("INDEX ERROR:", err);
-        res.status(500).send("Error fetching listings");
-    }
-});
+    })
+);
 
 // New Route
 app.get("/listings/new", (req, res) => {
@@ -43,96 +56,101 @@ app.get("/listings/new", (req, res) => {
 });
 
 // Create Route
-app.post("/listings", async (req, res) => {
-    try {
+app.post(
+    "/listings",
+    validateListing,
+    wrapAsync(async (req, res) => {
         const newListing = new Listing(req.body.listing);
+
         await newListing.save();
 
         res.redirect("/listings");
-    } catch (err) {
-        console.error("CREATE ERROR:", err);
-        res.status(500).send("Error creating listing");
-    }
-});
+    })
+);
 
 // Edit Route
-app.get("/listings/:id/edit", async (req, res) => {
-    try {
+app.get(
+    "/listings/:id/edit",
+    wrapAsync(async (req, res) => {
         const { id } = req.params;
         const listing = await Listing.findById(id);
 
         if (!listing) {
-            return res.status(404).send("Listing not found");
+            throw new ExpressError(404, "Listing not found");
         }
 
         res.render("listings/edit.ejs", { listing });
-    } catch (err) {
-        console.error("EDIT ERROR:", err);
-        res.status(500).send("Error fetching listing");
-    }
-});
+    })
+);
 
 // Update Route
-app.put("/listings/:id", async (req, res) => {
-    try {
+app.put(
+    "/listings/:id",
+    validateListing,
+    wrapAsync(async (req, res) => {
         const { id } = req.params;
-        const { listing } = req.body;
 
-        if (!listing) {
-            return res.status(400).send("Listing data is missing");
+        const updatedListing = await Listing.findByIdAndUpdate(
+            id,
+            req.body.listing,
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+        if (!updatedListing) {
+            throw new ExpressError(404, "Listing not found");
         }
 
-        const updateData = { ...listing };
-
-        // Handle image URL if provided
-        if (listing.image && listing.image.url) {
-            updateData.image = {
-                filename: "listingimage",
-                url: listing.image.url
-            };
-        }
-
-        await Listing.findByIdAndUpdate(id, updateData, {
-            runValidators: true
-        });
-
-        // Redirect to the correct Show Route
         res.redirect(`/listings/${id}`);
-    } catch (err) {
-        console.error("UPDATE ERROR:", err);
-        res.status(500).send("Error updating listing");
-    }
-});
+    })
+);
 
 // Show Route
-app.get("/listings/:id", async (req, res) => {
-    try {
+app.get(
+    "/listings/:id",
+    wrapAsync(async (req, res) => {
         const { id } = req.params;
         const listing = await Listing.findById(id);
 
         if (!listing) {
-            return res.status(404).send("Listing not found");
+            throw new ExpressError(404, "Listing not found");
         }
 
         res.render("listings/show.ejs", { listing });
-    } catch (err) {
-        console.error("SHOW ERROR:", err);
-        res.status(500).send("Error fetching listing");
-    }
-});
+    })
+);
 
 // Delete Route
-app.delete("/listings/:id", async (req, res) => {
-    try {
+app.delete(
+    "/listings/:id",
+    wrapAsync(async (req, res) => {
         const { id } = req.params;
 
-        await Listing.findByIdAndDelete(id);
+        const deletedListing = await Listing.findByIdAndDelete(id);
+
+        if (!deletedListing) {
+            throw new ExpressError(404, "Listing not found");
+        }
 
         res.redirect("/listings");
-    } catch (err) {
-        console.error("DELETE ERROR:", err);
-        res.status(500).send("Error deleting listing");
-    }
+    })
+);
+
+// 404 Middleware
+app.use((req, res, next) => {
+    next(new ExpressError(404, "Page not found"));
+});
+
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+    const statusCode = err.statusCode || 500;
+    const message = err.message || "Something went wrong!";
+
+    res.status(statusCode).render("error.ejs", {
+        message
+    });
 });
 
 // Start Server

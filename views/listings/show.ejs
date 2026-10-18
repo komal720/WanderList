@@ -4,18 +4,20 @@
 <div class="row mt-4">
     <div class="col-8 offset-2">
 
-        <h3>Listing Details:</h3>
+        <h3>Listing Details</h3>
 
         <div class="card mb-3">
             <img
-                src="<%= listing.image?.url || '' %>"
+                src="<%= listing.image?.url || 'https://images.unsplash.com/photo-1510798831971-661eb04b3739' %>"
                 class="card-img-top"
                 alt="<%= listing.title %>"
                 style="height: 20rem; object-fit: cover;"
             >
 
             <div class="card-body">
-                <h5 class="card-title"><%= listing.title %></h5>
+                <h5 class="card-title">
+                    <%= listing.title %>
+                </h5>
 
                 <p class="card-text">
                     <%= listing.description %>
