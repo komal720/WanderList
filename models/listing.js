@@ -1,29 +1,52 @@
 
 const mongoose = require("mongoose");
+
 const Schema = mongoose.Schema;
 
 const listingSchema = new Schema({
-  title: {
-    type: String,
-    required: true,
-  },
-
-  description: String,
-
-  image: {
-    type: {
-      filename: String,
-      url: String,
+    title: {
+        type: String,
+        required: true,
     },
-    default: {
-      filename: "listingimage",
-      url: "https://www.shutterstock.com/image-illustration/a-striking-illustration-lord-shiva-260nw-2327766159.jpg",
-    },
-  },
 
-  price: Number,
-  location: String,
-  country: String,
+    description: {
+        type: String,
+    },
+
+   image: {
+    filename: {
+        type: String,
+        default: "listingimage"
+    },
+    url: {
+        type: String,
+        default: "https://images.unsplash.com/photo-1510798831971-661eb04b3739"
+    }
+},
+
+    price: {
+        type: Number,
+    },
+
+    location: {
+        type: String,
+    },
+
+    country: {
+        type: String,
+    },
+
+    reviews: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: "Review",
+        },
+    ],
+
+    owner: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+    },
 });
 
 const Listing = mongoose.model("Listing", listingSchema);

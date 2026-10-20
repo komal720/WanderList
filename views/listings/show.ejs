@@ -4,11 +4,13 @@
 <div class="row mt-4">
     <div class="col-8 offset-2">
 
-        <h3>Listing Details</h3>
+        <h3><%= listing.title %></h3>
 
+        <!-- Listing Card -->
         <div class="card mb-3">
             <img
                 src="<%= listing.image?.url || 'https://images.unsplash.com/photo-1510798831971-661eb04b3739' %>"
+                onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1510798831971-661eb04b3739';"
                 class="card-img-top"
                 alt="<%= listing.title %>"
                 style="height: 20rem; object-fit: cover;"
@@ -24,8 +26,12 @@
                 </p>
 
                 <p class="card-text">
+                    <strong>Owned By:</strong>
+                    <i><%= listing.owner?.username || "Unknown" %></i>
+                    <br>
+
                     <strong>Price:</strong>
-                    ₹ <%= listing.price.toLocaleString("en-IN") %> / night
+                    ₹<%= Number(listing.price).toLocaleString("en-IN") %> / night
                 </p>
 
                 <p class="card-text">
@@ -40,22 +46,151 @@
             </div>
         </div>
 
-        <a
-            href="/listings/<%= listing._id %>/edit"
-            class="btn btn-danger"
-        >
-            Edit this Listing
-        </a>
+        <!-- Edit and Delete Listing: Only Owner -->
+        <% if (
+            currUser &&
+            listing.owner &&
+            listing.owner._id.equals(currUser._id)
+        ) { %>
 
-        <form
-            method="POST"
-            action="/listings/<%= listing._id %>?_method=DELETE"
-            class="mt-3"
-        >
-            <button type="submit" class="btn btn-dark">
-                Delete this Listing
-            </button>
-        </form>
+            <a
+                href="/listings/<%= listing._id %>/edit"
+                class="btn btn-danger"
+            >
+                Edit this Listing
+            </a>
+
+            <form
+                method="POST"
+                action="/listings/<%= listing._id %>?_method=DELETE"
+                class="d-inline"
+            >
+                <button type="submit" class="btn btn-dark">
+                    Delete this Listing
+                </button>
+            </form>
+
+        <% } %>
+
+        <!-- Review Form: Logged-in Users -->
+        <% if (currUser) { %>
+
+            <div class="mt-4">
+                <hr>
+                <h4>Leave a Review</h4>
+
+                <form
+                    action="/listings/<%= listing._id %>/reviews"
+                    method="POST"
+                >
+                    <div class="mb-3">
+                        <label for="rating" class="form-label">
+                            Rating
+                        </label>
+
+                        <input
+                            type="range"
+                            min="1"
+                            max="5"
+                            value="3"
+                            id="rating"
+                            name="review[rating]"
+                            class="form-range"
+                        >
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="comment" class="form-label">
+                            Comments
+                        </label>
+
+                        <textarea
+                            name="review[comment]"
+                            id="comment"
+                            rows="4"
+                            class="form-control"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-outline-dark">
+                        Submit
+                    </button>
+                </form>
+            </div>
+
+        <% } else { %>
+
+            <p class="mt-4">
+                <a href="/login">Log in</a> to leave a review.
+            </p>
+
+        <% } %>
+
+        <!-- All Reviews: Everyone Can See -->
+        <div class="mt-4">
+            <hr>
+            <h4>All Reviews</h4>
+
+            <% if (listing.reviews && listing.reviews.length > 0) { %>
+
+                <% for (let review of listing.reviews) { %>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+
+                            <h5>
+                                Rating: <%= review.rating %>/5
+                            </h5>
+
+                            <p>
+                                <%= review.comment %>
+                            </p>
+
+                            <small>
+                                <strong>By:</strong>
+                                <%= review.author?.username || "Unknown" %>
+                                <br>
+
+                                <%= review.createdAt
+                                    ? review.createdAt.toDateString()
+                                    : "" %>
+                            </small>
+
+                            <br>
+
+                            <!-- Delete Review: Only Review Author -->
+                            <% if (
+                                currUser &&
+                                review.author &&
+                                review.author._id.equals(currUser._id)
+                            ) { %>
+
+                                <form
+                                    method="POST"
+                                    action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="btn btn-danger btn-sm mt-2"
+                                    >
+                                        Delete
+                                    </button>
+                                </form>
+
+                            <% } %>
+
+                        </div>
+                    </div>
+
+                <% } %>
+
+            <% } else { %>
+
+                <p>No reviews yet.</p>
+
+            <% } %>
+        </div>
 
     </div>
 </div>

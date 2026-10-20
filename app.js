@@ -1,17 +1,24 @@
 
 const express = require("express");
 const app = express();
-
-const connectDB = require("./config/databases");
-const Listing = require("./models/listing");
 const path = require("path");
 
+const connectDB = require("./config/databases");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
+const session = require("express-session");
+const flash = require("connect-flash");
 
-const wrapAsync = require("./utils/wrapAsync");
+const passport = require("passport");
+const LocalStrategy = require("passport-local").Strategy;
+const User = require("./models/user.js");
+
 const ExpressError = require("./utils/ExpressError.js");
-const { listingSchema } = require("./schema.js");
+
+// Separate Routes
+const listingRouter = require("./routes/listing.js");
+const reviewRouter = require("./routes/review.js");
+const userRouter = require("./routes/user.js");
 
 // EJS Configuration
 app.engine("ejs", ejsMate);
@@ -25,118 +32,47 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 
+// Session Configuration
+const sessionOptions = {
+    secret: process.env.SECRET || "mysupersecretcode",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: true
+    }
+};
+
+// Session and Flash
+app.use(session(sessionOptions));
+app.use(flash());
+
+// Passport Configuration
+app.use(passport.initialize());
+app.use(passport.session());
+
+passport.use(new LocalStrategy(User.authenticate()));
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+// Make Flash Messages and Current User Available in EJS
+app.use((req, res, next) => {
+    res.locals.success = req.flash("success");
+    res.locals.error = req.flash("error");
+    res.locals.currUser = req.user;
+    next();
+});
+
 // Root Route
 app.get("/", (req, res) => {
     res.send("Hii, I am Root");
 });
 
-// Validate Listing Middleware
-const validateListing = (req, res, next) => {
-    const { error } = listingSchema.validate(req.body.listing);
-
-    if (error) {
-        return next(new ExpressError(400, error.message));
-    }
-
-    next();
-};
-
-// Index Route
-app.get(
-    "/listings",
-    wrapAsync(async (req, res) => {
-        const allListing = await Listing.find({});
-        res.render("listings/index.ejs", { allListing });
-    })
-);
-
-// New Route
-app.get("/listings/new", (req, res) => {
-    res.render("listings/new.ejs");
-});
-
-// Create Route
-app.post(
-    "/listings",
-    validateListing,
-    wrapAsync(async (req, res) => {
-        const newListing = new Listing(req.body.listing);
-
-        await newListing.save();
-
-        res.redirect("/listings");
-    })
-);
-
-// Edit Route
-app.get(
-    "/listings/:id/edit",
-    wrapAsync(async (req, res) => {
-        const { id } = req.params;
-        const listing = await Listing.findById(id);
-
-        if (!listing) {
-            throw new ExpressError(404, "Listing not found");
-        }
-
-        res.render("listings/edit.ejs", { listing });
-    })
-);
-
-// Update Route
-app.put(
-    "/listings/:id",
-    validateListing,
-    wrapAsync(async (req, res) => {
-        const { id } = req.params;
-
-        const updatedListing = await Listing.findByIdAndUpdate(
-            id,
-            req.body.listing,
-            {
-                new: true,
-                runValidators: true
-            }
-        );
-
-        if (!updatedListing) {
-            throw new ExpressError(404, "Listing not found");
-        }
-
-        res.redirect(`/listings/${id}`);
-    })
-);
-
-// Show Route
-app.get(
-    "/listings/:id",
-    wrapAsync(async (req, res) => {
-        const { id } = req.params;
-        const listing = await Listing.findById(id);
-
-        if (!listing) {
-            throw new ExpressError(404, "Listing not found");
-        }
-
-        res.render("listings/show.ejs", { listing });
-    })
-);
-
-// Delete Route
-app.delete(
-    "/listings/:id",
-    wrapAsync(async (req, res) => {
-        const { id } = req.params;
-
-        const deletedListing = await Listing.findByIdAndDelete(id);
-
-        if (!deletedListing) {
-            throw new ExpressError(404, "Listing not found");
-        }
-
-        res.redirect("/listings");
-    })
-);
+// Mount Routes
+app.use("/listings", listingRouter);
+app.use("/listings/:id/reviews", reviewRouter);
+app.use("/", userRouter);
 
 // 404 Middleware
 app.use((req, res, next) => {
@@ -149,7 +85,8 @@ app.use((err, req, res, next) => {
     const message = err.message || "Something went wrong!";
 
     res.status(statusCode).render("error.ejs", {
-        message
+        message,
+        statusCode
     });
 });
 
