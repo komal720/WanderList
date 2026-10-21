@@ -34,14 +34,23 @@ module.exports.showListing = async (req, res) => {
 
 // CREATE ROUTE
 module.exports.createListing = async (req, res) => {
+    if (!req.file) {
+        throw new ExpressError(400, "Please upload a listing image!");
+    }
+
     const newListing = new Listing(req.body.listing);
 
     newListing.owner = req.user._id;
 
+    // Save uploaded Cloudinary image
+    newListing.image = {
+        url: req.file.path,
+        filename: req.file.filename
+    };
+
     await newListing.save();
 
     req.flash("success", "Listing created successfully!");
-
     res.redirect(`/listings/${newListing._id}`);
 };
 
@@ -58,22 +67,27 @@ module.exports.renderEditListing = async (req, res) => {
 
 // UPDATE ROUTE
 module.exports.updateListing = async (req, res) => {
-    const updatedListing = await Listing.findByIdAndUpdate(
-        req.params.id,
-        req.body.listing,
-        {
-            new: true,
-            runValidators: true
-        }
-    );
+    const listing = await Listing.findById(req.params.id);
 
-    if (!updatedListing) {
+    if (!listing) {
         throw new ExpressError(404, "Listing not found!");
     }
 
-    req.flash("success", "Listing updated successfully!");
+    // Update listing text fields
+    Object.assign(listing, req.body.listing);
 
-    res.redirect(`/listings/${updatedListing._id}`);
+    // Update image only if a new image was uploaded
+    if (req.file) {
+        listing.image = {
+            url: req.file.path,
+            filename: req.file.filename
+        };
+    }
+
+    await listing.save();
+
+    req.flash("success", "Listing updated successfully!");
+    res.redirect(`/listings/${listing._id}`);
 };
 
 // DELETE ROUTE
@@ -85,6 +99,5 @@ module.exports.deleteListing = async (req, res) => {
     }
 
     req.flash("success", "Listing deleted successfully!");
-
     res.redirect("/listings");
 };

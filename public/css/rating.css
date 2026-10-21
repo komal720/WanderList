@@ -1,0 +1,53 @@
+
+/* Star Rating Form */
+.star-rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    width: fit-content;
+}
+
+.star-rating input {
+    display: none;
+}
+
+.star-rating label {
+    font-size: 2rem;
+    color: #ccc;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    line-height: 1.2;
+}
+
+/* Selected and Hover Stars */
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+    color: #ffc107;
+}
+
+/* Stars in All Reviews */
+.review-stars {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.review-stars span {
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+
+.filled-star {
+    color: #ffc107;
+}
+
+.empty-star {
+    color: #ccc;
+}
+
+.rating-number {
+    color: #333;
+    font-size: 0.9rem;
+    margin-left: 6px;
+}

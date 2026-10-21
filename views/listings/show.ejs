@@ -8,9 +8,9 @@
 
         <!-- Listing Card -->
         <div class="card mb-3">
+
             <img
                 src="<%= listing.image?.url || 'https://images.unsplash.com/photo-1510798831971-661eb04b3739' %>"
-                onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1510798831971-661eb04b3739';"
                 class="card-img-top"
                 alt="<%= listing.title %>"
                 style="height: 20rem; object-fit: cover;"
@@ -31,7 +31,8 @@
                     <br>
 
                     <strong>Price:</strong>
-                    ₹<%= Number(listing.price).toLocaleString("en-IN") %> / night
+                    ₹<%= Number(listing.price).toLocaleString("en-IN") %>
+                    / night
                 </p>
 
                 <p class="card-text">
@@ -72,7 +73,7 @@
 
         <% } %>
 
-        <!-- Review Form: Logged-in Users -->
+        <!-- Review Form -->
         <% if (currUser) { %>
 
             <div class="mt-4">
@@ -83,22 +84,33 @@
                     action="/listings/<%= listing._id %>/reviews"
                     method="POST"
                 >
-                    <div class="mb-3">
-                        <label for="rating" class="form-label">
-                            Rating
-                        </label>
 
-                        <input
-                            type="range"
-                            min="1"
-                            max="5"
-                            value="3"
-                            id="rating"
-                            name="review[rating]"
-                            class="form-range"
-                        >
+                    <!-- Star Rating -->
+                    <div class="mb-3">
+                        <label class="form-label">Rating</label>
+
+                        <div class="star-rating">
+                            <% for (let i = 5; i >= 1; i--) { %>
+
+                                <input
+                                    type="radio"
+                                    id="star<%= i %>"
+                                    name="review[rating]"
+                                    value="<%= i %>"
+                                    <%= i === 3 ? "checked" : "" %>
+                                    required
+                                >
+
+                                <label
+                                    for="star<%= i %>"
+                                    title="<%= i %> stars"
+                                >★</label>
+
+                            <% } %>
+                        </div>
                     </div>
 
+                    <!-- Comment -->
                     <div class="mb-3">
                         <label for="comment" class="form-label">
                             Comments
@@ -109,81 +121,108 @@
                             id="comment"
                             rows="4"
                             class="form-control"
+                            placeholder="Write your review here..."
                             required
                         ></textarea>
                     </div>
 
-                    <button type="submit" class="btn btn-outline-dark">
+                    <button
+                        type="submit"
+                        class="btn btn-outline-dark"
+                    >
                         Submit
                     </button>
+
                 </form>
             </div>
 
         <% } else { %>
 
             <p class="mt-4">
-                <a href="/login">Log in</a> to leave a review.
+                <a href="/login">Log in</a>
+                to leave a review.
             </p>
 
         <% } %>
 
-        <!-- All Reviews: Everyone Can See -->
+        <!-- All Reviews -->
         <div class="mt-4">
             <hr>
             <h4>All Reviews</h4>
 
             <% if (listing.reviews && listing.reviews.length > 0) { %>
 
-                <% for (let review of listing.reviews) { %>
+                <div class="row">
 
-                    <div class="card mb-3">
-                        <div class="card-body">
+                    <% for (let review of listing.reviews) { %>
 
-                            <h5>
-                                Rating: <%= review.rating %>/5
-                            </h5>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
 
-                            <p>
-                                <%= review.comment %>
-                            </p>
+                                <div class="card-body">
 
-                            <small>
-                                <strong>By:</strong>
-                                <%= review.author?.username || "Unknown" %>
-                                <br>
+                                    <!-- Review Author -->
+                                    <h5>
+                                        @<%= review.author?.username || "Unknown" %>
+                                    </h5>
 
-                                <%= review.createdAt
-                                    ? review.createdAt.toDateString()
-                                    : "" %>
-                            </small>
+                                    <!-- Display Rating Stars -->
+                                    <div class="review-stars mb-2">
 
-                            <br>
+                                        <% for (let i = 1; i <= 5; i++) { %>
 
-                            <!-- Delete Review: Only Review Author -->
-                            <% if (
-                                currUser &&
-                                review.author &&
-                                review.author._id.equals(currUser._id)
-                            ) { %>
+                                            <span class="<%= i <= review.rating ? 'filled-star' : 'empty-star' %>">★</span>
 
-                                <form
-                                    method="POST"
-                                    action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE"
-                                >
-                                    <button
-                                        type="submit"
-                                        class="btn btn-danger btn-sm mt-2"
-                                    >
-                                        Delete
-                                    </button>
-                                </form>
+                                        <% } %>
 
-                            <% } %>
+                                        <span class="rating-number">
+                                            <%= review.rating %>/5
+                                        </span>
 
+                                    </div>
+
+                                    <!-- Review Comment -->
+                                    <p class="card-text">
+                                        <%= review.comment %>
+                                    </p>
+
+                                    <!-- Review Date -->
+                                    <small class="text-muted">
+                                        <%= review.createdAt
+                                            ? review.createdAt.toDateString()
+                                            : "" %>
+                                    </small>
+
+                                    <br>
+
+                                    <!-- Delete Review: Only Author -->
+                                    <% if (
+                                        currUser &&
+                                        review.author &&
+                                        review.author._id.equals(currUser._id)
+                                    ) { %>
+
+                                        <form
+                                            method="POST"
+                                            action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="btn btn-danger btn-sm mt-2"
+                                            >
+                                                Delete
+                                            </button>
+                                        </form>
+
+                                    <% } %>
+
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                <% } %>
+                    <% } %>
+
+                </div>
 
             <% } else { %>
 

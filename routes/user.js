@@ -8,41 +8,35 @@ const wrapAsync = require("../utils/wrapAsync.js");
 const { saveRedirectUrl } = require("../middleware.js");
 const userController = require("../controllers/users.js");
 
-// SIGNUP FORM
-router.get(
-    "/signup",
-    userController.renderSignupForm
-);
+// SIGNUP ROUTES
+router.route("/signup")
+    .get(
+        userController.renderSignupForm
+    )
+    .post(
+        wrapAsync(userController.signup)
+    );
 
-// SIGNUP ROUTE
-router.post(
-    "/signup",
-    wrapAsync(userController.signup)
-);
+// LOGIN ROUTES
+router.route("/login")
+    .get(
+        userController.renderLoginForm
+    )
+    .post(
+        saveRedirectUrl,
+        passport.authenticate("local", {
+            failureRedirect: "/login",
+            failureFlash: "Invalid username or password."
+        }),
+        (req, res) => {
+            const redirectUrl =
+                res.locals.redirectUrl || "/listings";
 
-// LOGIN FORM
-router.get(
-    "/login",
-    userController.renderLoginForm
-);
+            req.flash("success", "Welcome back to WanderLust!");
 
-// LOGIN ROUTE
-router.post(
-    "/login",
-    saveRedirectUrl,
-    passport.authenticate("local", {
-        failureRedirect: "/login",
-        failureFlash: "Invalid username or password."
-    }),
-    (req, res) => {
-        const redirectUrl =
-            res.locals.redirectUrl || "/listings";
-
-        req.flash("success", "Welcome back to WanderLust!");
-
-        res.redirect(redirectUrl);
-    }
-);
+            res.redirect(redirectUrl);
+        }
+    );
 
 // LOGOUT ROUTE
 router.get(
