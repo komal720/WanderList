@@ -39,10 +39,7 @@ module.exports.createListing = async (req, res) => {
     }
 
     const newListing = new Listing(req.body.listing);
-
     newListing.owner = req.user._id;
-
-    // Save uploaded Cloudinary image
     newListing.image = {
         url: req.file.path,
         filename: req.file.filename
@@ -54,7 +51,7 @@ module.exports.createListing = async (req, res) => {
     res.redirect(`/listings/${newListing._id}`);
 };
 
-// EDIT ROUTE
+// EDIT FORM
 module.exports.renderEditListing = async (req, res) => {
     const listing = await Listing.findById(req.params.id);
 
@@ -73,10 +70,17 @@ module.exports.updateListing = async (req, res) => {
         throw new ExpressError(404, "Listing not found!");
     }
 
-    // Update listing text fields
-    Object.assign(listing, req.body.listing);
+    const { title, description, price, country, location } =
+        req.body.listing;
 
-    // Update image only if a new image was uploaded
+    Object.assign(listing, {
+        title,
+        description,
+        price,
+        country,
+        location
+    });
+
     if (req.file) {
         listing.image = {
             url: req.file.path,
