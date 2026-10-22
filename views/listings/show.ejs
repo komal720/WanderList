@@ -1,6 +1,10 @@
 
 <% layout("/layouts/boilerPlate") %>
 
+<script>
+    const mapToken = "<%= process.env.MAP_TOKEN %>";
+</script>
+
 <div class="row mt-4">
     <div class="col-8 offset-2">
 
@@ -232,4 +236,10 @@
         </div>
 
     </div>
+    
+<div class="mt-4">
+    <h4>Where you'll be</h4>
+<div id="map"></div>
+</div>
+
 </div>
