@@ -1,4 +1,5 @@
 
+const { required } = require("joi");
 const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
@@ -13,10 +14,10 @@ const listingSchema = new Schema({
         type: String,
     },
 
-   image: {
-   url:String,
-   filename:String,
-},
+    image: {
+        url: String,
+        filename: String,
+    },
 
     price: {
         type: Number,
@@ -29,6 +30,20 @@ const listingSchema = new Schema({
     country: {
         type: String,
     },
+
+    // GEOMETRY FOR MAPBOX
+  geometry: {
+    type: {
+        type: String,
+        enum: ["Point"],
+        required:true
+    },
+    coordinates: {
+        type: [Number],
+        default: [0, 0],
+        required:true
+    }
+},
 
     reviews: [
         {

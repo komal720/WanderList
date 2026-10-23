@@ -108,17 +108,14 @@ body {
 
 /*Edit page*/
 
-.edit-btn{
-    background-color: #fe424d;  !important;
-    border:none  !important;
-    
+
+.edit-btn {
+    background-color: #fe424d !important;
+    border: none !important;
 }
 
 
-
-
-#map {
+#map{
     height: 400px;
-    width: 100%;
-    border-radius: 10px;
+    width:80vh ;
 }
