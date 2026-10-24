@@ -1,9 +1,7 @@
-if(process.env.NODE_ENV !="production"){
+
+if (process.env.NODE_ENV !== "production") {
     require("dotenv").config();
 }
-
-
-
 
 const express = require("express");
 const app = express();
@@ -17,7 +15,9 @@ const flash = require("connect-flash");
 
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
+
 const User = require("./models/user.js");
+const Listing = require("./models/listing.js");
 
 const ExpressError = require("./utils/ExpressError.js");
 
@@ -45,7 +45,8 @@ const sessionOptions = {
     saveUninitialized: false,
     cookie: {
         maxAge: 7 * 24 * 60 * 60 * 1000,
-        httpOnly: true
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production"
     }
 };
 
@@ -79,6 +80,7 @@ app.get("/", async (req, res, next) => {
         next(err);
     }
 });
+
 // Mount Routes
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
@@ -105,11 +107,14 @@ const startServer = async () => {
     try {
         await connectDB();
 
-        app.listen(7000, () => {
-            console.log("Server running on port 7000");
+        app.listen(process.env.PORT || 7000, () => {
+            console.log(
+                `Server running on port ${process.env.PORT || 7000}`
+            );
         });
     } catch (err) {
-        console.error("MongoDB connection failed:", err.message);
+        console.error("MongoDB connection failed:", err);
+        process.exit(1);
     }
 };
 
