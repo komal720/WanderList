@@ -71,11 +71,14 @@ app.use((req, res, next) => {
 });
 
 // Root Route
-app.get("/", async (req, res) => {
-    const allListing = await Listing.find({});
-    res.render("listings/index.ejs", { allListing });
+app.get("/", async (req, res, next) => {
+    try {
+        const allListing = await Listing.find({});
+        res.render("listings/index.ejs", { allListing });
+    } catch (err) {
+        next(err);
+    }
 });
-
 // Mount Routes
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
