@@ -1,21 +1,14 @@
 
+    
+ 
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
-    try {
-        const uri = process.env.SECRET;
+  const uri =  "mongodb+srv://komalpandey0318_db_user:komal@cluster0.jutkxdv.mongodb.net/wanderlist";
 
-        if (!uri) {
-            throw new Error("MongoDB connection string (SECRET) is missing");
-        }
+  await mongoose.connect(uri);
 
-        await mongoose.connect(uri);
-
-        console.log("MongoDB connected successfully");
-    } catch (err) {
-        console.error("MongoDB connection failed:", err.message);
-        process.exit(1);
-    }
+  console.log("MongoDB connected successfully");
 };
 
 module.exports = connectDB;
