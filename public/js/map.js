@@ -24,18 +24,44 @@ function initializeMap() {
         container: mapElement,
         style: "mapbox://styles/mapbox/streets-v12",
         center: coordinates,
-        zoom: 3
+        zoom: 10
     });
 
-    new mapboxgl.Marker()
-        .setLngLat(coordinates)
-        .setPopup(
-            new mapboxgl.Popup({ offset: 25 }).setHTML(
-                "<h4>Exact Location</h4>" +
-                "<p>Exact location provided after booking.</p>"
-            )
-        )
-        .addTo(map);
+  new mapboxgl.Marker({
+    color: "#fe424d"
+})
+    .setLngLat(coordinates)
+    .setPopup(
+        new mapboxgl.Popup({
+            offset: 25,
+            closeButton: true,
+            closeOnClick: false,
+            maxWidth: "300px"
+        })
+        .setHTML(`
+            <div class="map-popup">
+
+                <div class="map-popup-icon">
+                    <i class="fa-solid fa-location-dot"></i>
+                </div>
+
+                <div class="map-popup-content">
+                    <h5>Where you'll be</h5>
+
+                    <p class="map-popup-location">
+                        <i class="fa-solid fa-map-pin"></i>
+                        Exact Location
+                    </p>
+
+                    <p class="map-popup-text">
+                        Exact location will be provided after booking.
+                    </p>
+                </div>
+
+            </div>
+        `)
+    )
+    .addTo(map);
 }
 
 if (document.readyState === "loading") {
