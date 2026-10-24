@@ -24,7 +24,7 @@ function initializeMap() {
         container: mapElement,
         style: "mapbox://styles/mapbox/streets-v12",
         center: coordinates,
-        zoom: 8
+        zoom: 3
     });
 
     new mapboxgl.Marker()

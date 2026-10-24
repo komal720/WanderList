@@ -1,15 +1,15 @@
-
-if (process.env.NODE_ENV !== "production") {
+if(process.env.NODE_ENV !="production"){
     require("dotenv").config();
 }
+
+
+
 
 const express = require("express");
 const app = express();
 const path = require("path");
 
 const connectDB = require("./config/databases");
-const Listing = require("./models/listing.js");
-
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const session = require("express-session");
@@ -20,6 +20,11 @@ const LocalStrategy = require("passport-local").Strategy;
 const User = require("./models/user.js");
 
 const ExpressError = require("./utils/ExpressError.js");
+
+// Separate Routes
+const listingRouter = require("./routes/listing.js");
+const reviewRouter = require("./routes/review.js");
+const userRouter = require("./routes/user.js");
 
 // EJS Configuration
 app.engine("ejs", ejsMate);
@@ -34,26 +39,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 
 // Session Configuration
-const sessionSecret = process.env.SECRET_SESSION;
-
-if (!sessionSecret) {
-    throw new Error(
-        "SECRET_SESSION is missing from environment variables"
-    );
-}
-
 const sessionOptions = {
-    secret: sessionSecret,
+    secret: process.env.SECRET || "mysupersecretcode",
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 7 * 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax"
+        httpOnly: true
     }
 };
 
+// Session and Flash
 app.use(session(sessionOptions));
 app.use(flash());
 
@@ -62,10 +58,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 passport.use(new LocalStrategy(User.authenticate()));
+
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// Flash Messages and EJS Locals
+// Make Flash Messages and Current User Available in EJS
 app.use((req, res, next) => {
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
@@ -73,34 +70,24 @@ app.use((req, res, next) => {
     next();
 });
 
-// Homepage
-app.get("/", async (req, res, next) => {
-    try {
-        const allListing = await Listing.find({});
-        res.render("listings/index.ejs", { allListing });
-    } catch (err) {
-        next(err);
-    }
+// Root Route
+app.get("/", async (req, res) => {
+    const allListing = await Listing.find({});
+    res.render("listings/index.ejs", { allListing });
 });
 
-// Routes
-const listingRouter = require("./routes/listing.js");
-const reviewRouter = require("./routes/review.js");
-const userRouter = require("./routes/user.js");
-
+// Mount Routes
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-// 404 Handler
+// 404 Middleware
 app.use((req, res, next) => {
     next(new ExpressError(404, "Page not found"));
 });
 
-// Error Handler
+// Error Handling Middleware
 app.use((err, req, res, next) => {
-    console.error(err);
-
     const statusCode = err.statusCode || 500;
     const message = err.message || "Something went wrong!";
 
@@ -115,14 +102,11 @@ const startServer = async () => {
     try {
         await connectDB();
 
-        const PORT = process.env.PORT || 7000;
-
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
+        app.listen(7000, () => {
+            console.log("Server running on port 7000");
         });
     } catch (err) {
-        console.error("Application startup failed:", err);
-        process.exit(1);
+        console.error("MongoDB connection failed:", err.message);
     }
 };
 

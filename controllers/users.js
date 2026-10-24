@@ -1,20 +1,16 @@
 
 const User = require("../models/user.js");
+const ExpressError = require("../utils/ExpressError.js");
 
 // SIGNUP FORM
 module.exports.renderSignupForm = (req, res) => {
     res.render("users/signup.ejs");
 };
 
-// REGISTER USER
+// SIGNUP
 module.exports.signup = async (req, res, next) => {
     try {
         const { username, email, password } = req.body;
-
-        if (!username || !email || !password) {
-            req.flash("error", "All fields are required.");
-            return res.redirect("/signup");
-        }
 
         const newUser = new User({
             username,
@@ -35,17 +31,8 @@ module.exports.signup = async (req, res, next) => {
             res.redirect("/listings");
         });
     } catch (err) {
-        if (err.name === "UserExistsError" || err.code === 11000) {
-            req.flash("error", "Username or email may already be registered.");
-            return res.redirect("/signup");
-        }
-
-        if (err.name === "ValidationError") {
-            req.flash("error", err.message);
-            return res.redirect("/signup");
-        }
-
-        next(err);
+        req.flash("error", err.message);
+        res.redirect("/signup");
     }
 };
 
