@@ -21,11 +21,6 @@ const User = require("./models/user.js");
 
 const ExpressError = require("./utils/ExpressError.js");
 
-// Routes
-const listingRouter = require("./routes/listing.js");
-const reviewRouter = require("./routes/review.js");
-const userRouter = require("./routes/user.js");
-
 // EJS Configuration
 app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
@@ -39,21 +34,30 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 
 // Session Configuration
+const sessionSecret = process.env.SECRET_SESSION;
+
+if (!sessionSecret) {
+    throw new Error(
+        "SECRET_SESSION is missing from environment variables"
+    );
+}
+
 const sessionOptions = {
-    secret: process.env.SECRET || "mysupersecretcode",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production"
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
     }
 };
 
 app.use(session(sessionOptions));
 app.use(flash());
 
-// Passport
+// Passport Configuration
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -61,7 +65,7 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// EJS Locals
+// Flash Messages and EJS Locals
 app.use((req, res, next) => {
     res.locals.success = req.flash("success");
     res.locals.error = req.flash("error");
@@ -80,17 +84,23 @@ app.get("/", async (req, res, next) => {
 });
 
 // Routes
+const listingRouter = require("./routes/listing.js");
+const reviewRouter = require("./routes/review.js");
+const userRouter = require("./routes/user.js");
+
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 
-// 404
+// 404 Handler
 app.use((req, res, next) => {
     next(new ExpressError(404, "Page not found"));
 });
 
 // Error Handler
 app.use((err, req, res, next) => {
+    console.error(err);
+
     const statusCode = err.statusCode || 500;
     const message = err.message || "Something went wrong!";
 
@@ -111,7 +121,7 @@ const startServer = async () => {
             console.log(`Server running on port ${PORT}`);
         });
     } catch (err) {
-        console.error("Application startup failed:", err.message);
+        console.error("Application startup failed:", err);
         process.exit(1);
     }
 };
